@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:madaure/main.dart'; // Import pour apiService global
+import 'package:madaure/main.dart'; // Pour apiService global
 import 'package:madaure/models/school.dart';
 import 'package:madaure/models/user.dart';
 import 'package:geolocator/geolocator.dart';
@@ -36,29 +36,28 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
   Future<void> _initializeData() async {
     setState(() => _isLoading = true);
     try {
-      // 1. Récupérer le profil réel du distributeur
+      // 1. Récupérer le profil pour avoir la wilaya
       final userData = await apiService.fetchUserProfile();
+
+      if (!mounted) return;
+
       if (userData != null) {
         _currentUser = User.fromJson(userData);
+        print('✅ Distributeur localisé à: ${_currentUser?.wilaya}');
       }
 
-      // 2. Charger les écoles filtrées par Wilaya (Backend API)
-      final List<Map<String, dynamic>> schoolsData = await apiService.fetchSchools(
-          wilaya: _currentUser?.wilaya
-      );
+      // 2. Charger les écoles filtrées par cette wilaya
+      final schoolsData = await apiService.fetchSchools(wilaya: _currentUser?.wilaya);
 
-      setState(() {
-        _schools = schoolsData.map((s) => School.fromJson(s)).toList();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _schools = schoolsData.map((s) => School.fromJson(s)).toList();
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Erreur initialisation: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur: Impossible de charger les données du secteur')),
-        );
-      }
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -67,7 +66,9 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high
       );
-      setState(() => _position = position);
+      if (mounted) {
+        setState(() => _position = position);
+      }
     } catch (e) {
       print("⚠️ Erreur GPS: $e");
     }
@@ -108,10 +109,12 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
         );
       }
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur backend: $e'))
-      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur backend: $e'))
+        );
+      }
     }
   }
 
@@ -195,7 +198,8 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                     backgroundColor: Colors.blue.shade700,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('VALIDER LA LIVRAISON', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text('VALIDER LA LIVRAISON',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -207,11 +211,10 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.blue.shade200),
       ),
       child: Column(
@@ -219,18 +222,21 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.account_circle, color: Colors.blue),
-              const SizedBox(width: 8),
+              const Icon(Icons.person, color: Colors.blue),
+              const SizedBox(width: 10),
               Text(
-                'Distributeur: ${_currentUser?.name ?? "..."}',
+                _currentUser?.name ?? "Chargement...",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Wilaya assignée: ${_currentUser?.wilaya ?? "Chargement..."}',
-            style: TextStyle(color: Colors.blue.shade800),
+          const Divider(),
+          Row(
+            children: [
+              const Icon(Icons.map, color: Colors.orange, size: 20),
+              const SizedBox(width: 10),
+              Text("Secteur d'activité : ${_currentUser?.wilaya ?? 'Non défini'}"),
+            ],
           ),
         ],
       ),

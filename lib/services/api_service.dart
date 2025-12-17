@@ -446,29 +446,36 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> fetchSchools({String? wilaya}) async {
     try {
-      // Construction de l'URL avec le filtre wilaya si fourni
-      String urlPath = '$API_BASE_URL/schools';
+      // Construction de l'URL avec le filtre wilaya
+      String urlString = '$API_BASE_URL/schools';
       if (wilaya != null && wilaya.isNotEmpty) {
-        urlPath += '?wilaya=$wilaya';
+        urlString += '?wilaya=$wilaya';
       }
 
-      final url = Uri.parse(urlPath);
+      final url = Uri.parse(urlString);
       final headers = await _getHeaders();
       final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['success'] == true && data['schools'] is List) {
+
+        // ✅ LA CORRECTION CRUCIALE :
+        // On vérifie si la clé 'schools' existe et on extrait la LISTE uniquement
+        if (data['schools'] != null && data['schools'] is List) {
           return List<Map<String, dynamic>>.from(data['schools']);
+        } else if (data['schools'] != null && data['schools'] is Map) {
+          // Au cas où votre API Laravel renvoie une pagination (schools: { data: [...] })
+          if (data['schools']['data'] != null) {
+            return List<Map<String, dynamic>>.from(data['schools']['data']);
+          }
         }
       }
       return [];
     } catch (e) {
-      print('❌ Erreur fetchSchools: $e');
+      print('❌ Erreur fetchSchools détaillée: $e');
       return [];
     }
   }
-
   // --- 8. GÉOLOCALISATION ---
   Future<Position> getCurrentLocation() async {
     print('📍 Récupération de la position actuelle');

@@ -16,13 +16,15 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Le log montre que l'user est parfois dans json['user']
+    final userData = json['user'] ?? json;
     return User(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      role: json['role'] ?? 'user',
-      distributorId: json['distributor_id'],
-      wilaya: json['wilaya'],
+      id: userData['id'] ?? 0,
+      name: userData['name'] ?? '',
+      email: userData['email'] ?? '',
+      role: userData['role'] ?? 'user',
+      distributorId: userData['distributor_id'],
+      wilaya: userData['wilaya'], // Extraction de "Batna" par exemple
     );
   }
 

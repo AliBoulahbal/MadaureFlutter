@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart'; // Pour DateFormat
-import 'package:madaure/services/api_service.dart';
+import 'package:madaure//services/api_service.dart';
 import 'package:madaure/models/school.dart'; // ou delivery.dart selon l'écran
 class Payment {
   final int id;
